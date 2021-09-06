@@ -79,7 +79,7 @@ methods_params.append({'method': 'BayesPredictor_order0', 'order0': True})
 
 methods_params.append({'method': 'GBRT', 'n_iter_no_change': 10})
 
-mlp_depths = [0, 1, 2, 5, 10]
+mlp_depths = [1, 2, 5]
 width_factors = [1, 5, 10]
 weight_decays = [1e-6, 1e-5, 1e-4, 1e-3, 1e-2]
 learning_rates = [1e-2, 5e-3, 1e-3, 5e-4]
@@ -134,10 +134,8 @@ for add_mask in [True, False]:
                                                'verbose': False})
 
 
-for init in ['normal', 'custom_normal', 'uniform']:
+for init in ['uniform']:
     name = 'NeuMiss_' + init + '_'
-    if add_mask:
-        name += 'mask'
     for mlp_d in mlp_depths:
         for wf in width_factors:
             for d in neumann_depths:

@@ -62,7 +62,8 @@ def gen_params_selfmasking(n_features, missing_rate, prop_latent, sm_type,
         `square` (resp. `cube`), the link function is chosen as `curvature`*y^2
         (resp `curvature`*y^3 - 3y). If `stairs`, the link function is a sum of
         3 Gaussian cdfs with parameters lambda equal to `curvature` and
-        b equal to 0, -1.5 and 1.5.
+        b equal to 0, -1.5 and 1.5. If `discontinuous_linear`, it is a linear
+        function with a discontiniuty.
 
     curvature: float
         If `link=square`, this is the coefficient of the squared factor.
@@ -170,6 +171,8 @@ def gen_data_selfmasking(n_sizes, data_params, random_state=None):
             for a, b in zip([2, -4, 2], [-0.8, -1, -1.2]):
                 tmp = sqrt(pi/8)*curvature*(dot_product + b)
                 current_y += a*norm.cdf(tmp)
+        elif link == 'discontinuous_linear':
+            current_y = dot_product + (dot_product > 1)*3
 
         var_y = np.mean((current_y - np.mean(current_y))**2)
         sigma2_noise = var_y/snr
@@ -380,6 +383,10 @@ class BayesPredictor_GSM_nonlinear():
         _, _, sm_params, mu, cov, beta, _, _, link, curvature = \
             self.data_params
 
+        if link == 'discontinuous_linear' and not self.order0:
+            raise ValueError('We do not have the expression of the Bayes' +
+                             'predictor when `link = "discontinuous_linear"`')
+
         k = sm_params['k']
         tsigma2 = sm_params['sigma2_tilde']
         tmu = mu + k*np.sqrt(np.diag(cov))
@@ -411,6 +418,9 @@ class BayesPredictor_GSM_nonlinear():
             if link == 'linear':
                 predx0 = dot_product
                 predx = predx0
+            elif link == 'discontinuous_linear':
+                predx0 = dot_product + (dot_product > 1)*3
+                predx = None
             else:
                 var_Tmis = beta[mis + 1].dot(S).dot(beta[mis + 1])
                 if link == 'square':
