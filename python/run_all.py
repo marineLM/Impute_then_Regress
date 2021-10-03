@@ -35,56 +35,37 @@ ResultItem.__new__.__defaults__ = (np.nan, )*len(ResultItem._fields)
 def run(n_iter, n_sizes, n_test, n_val, mdm, data_descs, methods_params,
         filename, n_jobs=1):
 
-    if mdm == 'gaussian_sm':
-        generate_params = gen_params_selfmasking
-    elif mdm in ['MCAR', 'MAR']:
-        generate_params = gen_params
-
-    # params is a list that contains for each entry a dictionary of
-    # data params, updated method params and iteration ID that will serve to
-    # launch run_one.
-
-    # store_params is a list that contains for each entry a dictionary of
-    # data descs, original method params and iteration ID that will serve to
-    # store the results.
     params = []
-    store_params = []
-    for data_desc in data_descs.itertuples(index=False):
-        data_desc = dict(data_desc._asdict())
-
-        for it in range(n_iter):
-            data_params = generate_params(**data_desc, random_state=it)
-
-            for method_params in methods_params:
-                updated_method_params = update_method_params(
-                    method_params, data_params
-                )
-                method = method_params['method']
-                params.append([data_params, method, updated_method_params, it])
-                store_params.append([data_desc, method_params])
+    for method_params in methods_params:
+        method = method_params.pop('method')
+        for data_desc in data_descs.itertuples(index=False):
+            data_desc = dict(data_desc._asdict())
+            for it in range(n_iter):
+                params.append([data_desc, method, method_params, it])
 
     results = Parallel(n_jobs=n_jobs)(
-        delayed(run_one)(data_params, method, updated_method_params, it,
-                         n_sizes, n_test, n_val, mdm)
-        for data_params, method, updated_method_params, it in tqdm(params)
+        delayed(run_one)(data_desc, method, method_params, it, n_sizes,
+                         n_test, n_val, mdm)
+        for data_desc, method, method_params, it in tqdm(params)
     )
 
     # combined_results is a list of all result items that combine the obtained
     # performances and the corresponding data and method parameters.
     # Note that results has the same size as store_params (correspondance)
     combined_results = []
-    for i in range(len(store_params)):
-        data_desc, method_params = store_params[i]
+    for i in range(len(params)):
+        data_desc, method, method_params, _ = params[i]
         result = results[i]
         for result_n in result:
-            result_item = ResultItem(**result_n, **data_desc, **method_params)
+            result_item = ResultItem(
+                method=method, **result_n, **data_desc, **method_params)
             combined_results.append(result_item)
 
     combined_results = pd.DataFrame(combined_results)
     combined_results.to_csv('../results/' + filename + '.csv')
 
 
-def update_method_params(method_params, data_params=None):
+def update_method_params(method, method_params, data_params=None):
     '''
     data_params: tuple
         Only useful in simulations to recover the data parameters for
@@ -92,7 +73,6 @@ def update_method_params(method_params, data_params=None):
     '''
 
     params = method_params.copy()
-    method = params.pop('method')
 
     # Recover ground truth parameters for oracles
     if 'oracle' in method:
@@ -113,17 +93,22 @@ def update_method_params(method_params, data_params=None):
 
 
 @memory.cache
-def run_one(data_params, method, updated_method_params, it, n_sizes, n_test,
-            n_val, mdm):
+def run_one(data_desc, method, method_params, it, n_sizes, n_test, n_val, mdm):
 
     n_tot = [n_train + n_test + n_val for n_train in n_sizes]
 
     # Generate the data
     if mdm == 'gaussian_sm':
+        generate_params = gen_params_selfmasking
         generate_data = gen_data_selfmasking
     elif mdm in ['MCAR', 'MAR']:
+        generate_params = gen_params
         generate_data = gen_data
+    data_params = generate_params(**data_desc, random_state=it)
     gen = generate_data(n_tot, data_params, random_state=it)
+
+    updated_method_params = update_method_params(
+        method, method_params, data_params)
 
     # Get method name and initialize estimator
     if 'BayesPredictor' in method:
