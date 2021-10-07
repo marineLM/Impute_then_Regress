@@ -81,7 +81,7 @@ class Neumiss(nn.Module):
             tmp = math.sqrt(2/(beta.shape[0]+1))
             nn.init.normal_(beta, mean=0, std=tmp)
 
-        nn.init.normal_(mu)
+        nn.init.zeros_(mu)
         nn.init.zeros_(b)
 
         # Make tensors learnable parameters
