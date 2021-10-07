@@ -298,12 +298,25 @@ class Neumiss_mlp(BaseEstimator):
                            coefs=self.coefs)
 
         if len(list(self.net.parameters())) > 0:
+            # Create parameter groups
+            group_wd = []
+            group_no_wd = []
+            for name, param in self.net.named_parameters():
+                if name in ['mu', 'b']:
+                    group_no_wd.append(param)
+                else:
+                    group_wd.append(param)
+
             if self.optimizer == 'sgd':
-                self.optimizer = optim.SGD(self.net.parameters(), lr=self.lr,
-                                           weight_decay=self.weight_decay)
+                self.optimizer = optim.SGD(
+                    [{'params': group_wd, 'weight_decay': self.weight_decay},
+                     {'params': group_no_wd, 'weight_decay': 0}],
+                    lr=self.lr)
             elif self.optimizer == 'adam':
-                self.optimizer = optim.Adam(self.net.parameters(), lr=self.lr,
-                                            weight_decay=self.weight_decay)
+                self.optimizer = optim.Adam(
+                    [{'params': group_wd, 'weight_decay': self.weight_decay},
+                     {'params': group_no_wd, 'weight_decay': 0}],
+                    lr=self.lr)
 
             self.scheduler = ReduceLROnPlateau(
                             self.optimizer, mode='min', factor=0.2,
