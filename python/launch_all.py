@@ -11,7 +11,7 @@ parser.add_argument('--link', help='type of link function for the outcome',
 args = parser.parse_args()
 
 n_iter = 10
-n_jobs = 40
+n_jobs = 80
 n_sizes = [2e4, 1e5]
 n_sizes = [int(i) for i in n_sizes]
 n_test = int(1e4)
@@ -81,7 +81,7 @@ methods_params.append({'method': 'GBRT', 'n_iter_no_change': 10})
 
 mlp_depths = [1, 2, 5]
 width_factors = [1, 5, 10]
-weight_decays = [1e-6, 1e-5, 1e-4, 1e-3, 1e-2]
+weight_decays = [1e-6, 1e-5, 1e-4, 1e-3]
 learning_rates = [1e-2, 5e-3, 1e-3, 5e-4]
 neumann_depths = [20]
 
