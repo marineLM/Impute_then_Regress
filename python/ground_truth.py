@@ -492,11 +492,18 @@ class BayesPredictor_MCAR_MAR_nonlinear():
                 predx0 = dot_product + (dot_product > 1)*3
                 predx = None
             else:
-                sigma_mismis = sigma[np.ix_(mis, mis)]
-                sigma_mis_obs = sigma_mismis - sigma_misobs.dot(
-                    sigma_obs_inv).dot(sigma_misobs.T)
-                var_Tmis = beta[mis + 1].dot(
-                    sigma_mis_obs).dot(beta[mis + 1])
+                if len(mis)*len(obs) > 0:
+                    sigma_mismis = sigma[np.ix_(mis, mis)]
+                    sigma_mis_obs = sigma_mismis - sigma_misobs.dot(
+                        sigma_obs_inv).dot(sigma_misobs.T)
+                    var_Tmis = beta[mis + 1].dot(
+                        sigma_mis_obs).dot(beta[mis + 1])
+                elif len(obs) > 0:
+                    var_Tmis = 0
+                elif len(mis) > 0:
+                    sigma_mismis = sigma[np.ix_(mis, mis)]
+                    var_Tmis = beta[mis + 1].dot(sigma_mismis).dot(
+                        beta[mis + 1])
                 if link == 'square':
                     predx0 = curvature*(dot_product-1)**2
                     predx = predx0 + curvature*var_Tmis
