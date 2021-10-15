@@ -26,10 +26,8 @@ else:
 
 # First fill in data_desc with all default values.
 if args.mdm == 'MCAR':
-    if n_sizes[0] == 1e5:
+    if args.link:
         filename = 'MCAR_' + args.link
-    elif n_sizes[0] == 5e5:
-        filename = 'MCAR_' + args.link + '_500'
     else:
         filename = 'MCAR'
 
@@ -43,10 +41,8 @@ if args.mdm == 'MCAR':
     other_values = {'prop_latent': [0.7]}
 
 elif args.mdm == 'gaussian_sm':
-    if n_sizes[0] == 1e5:
+    if args.link:
         filename = 'gaussian_sm_' + args.link
-    elif n_sizes[0] == 5e5:
-        filename = 'gaussian_sm_' + args.link + '_500'
     else:
         filename = 'gaussian_sm'
 
