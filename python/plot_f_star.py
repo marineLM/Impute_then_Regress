@@ -1,3 +1,7 @@
+'''
+Figures to illustrate the lbnk functions used
+'''
+
 import matplotlib.pyplot as plt
 import numpy as np
 from math import sqrt, pi

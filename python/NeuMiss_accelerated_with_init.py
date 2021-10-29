@@ -1,4 +1,4 @@
-'''Implements Neumann with the posibility to do batch learning'''
+'''NeuMiss + MLP'''
 
 import math
 import numpy as np

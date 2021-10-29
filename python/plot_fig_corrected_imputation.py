@@ -1,5 +1,5 @@
 """
-A figure to illustrate the discontinuities in the corrected imputed.
+Figure to illustrate the potentiel discontinuities in corrected imputations.
 """
 import matplotlib.pyplot as plt
 from matplotlib import cm

@@ -1,3 +1,10 @@
+'''
+Defines:
+ - the paramaters of data simulations, 
+ - the list of methods to compare and their hyperparameters,
+And launches all experiments.
+'''
+
 import pandas as pd
 import argparse
 from run_all import run

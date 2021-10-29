@@ -19,7 +19,7 @@ memory = Memory(location, verbose=0)
 def gen_params_selfmasking(n_features, missing_rate, prop_latent, sm_type,
                            sm_param, snr, perm=False, link='linear',
                            curvature=1, random_state=None):
-    """Creates parameters for generating data with `generate_data_selfmasked`.
+    """Creates parameters for generating data with `generate_data_selfmasking`.
 
     Parameters
     ----------
@@ -446,7 +446,7 @@ class BayesPredictor_GSM_nonlinear():
 
 class BayesPredictor_MCAR_MAR_nonlinear():
     """This is the Bayes predictor for multivariate Gaussian data, MCAR or
-    MAR missing data mechanisms, and square link function."""
+    MAR missing data mechanisms."""
 
     def __init__(self, data_params, order0=False):
         self.data_params = data_params

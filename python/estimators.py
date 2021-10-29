@@ -1,9 +1,6 @@
-"""This file contains the estimators:
-    - ConstantImputedLR
-    - ExpandedLR
-    - EMLR
-    - ConstantImputedMLPR
-
+"""This file contains the following estimators:
+    - OracleImputeMLPPytorch
+    - ImputeMLPPytorch
 """
 import numpy as np
 from sklearn.base import BaseEstimator
