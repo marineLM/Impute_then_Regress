@@ -1,8 +1,5 @@
-"""This is computed from the following model:
-M, X of dimension n_features
-P(M=m) = probs[m] where m is represented as a string e.g. '011'
-X|M=m ~ N(means[m], covs[m])
-Y = beta[0] + beta.T.dot(X) + noise
+"""
+Data generation and Bayes predictors.
 """
 import numpy as np
 from sklearn.utils import check_random_state

@@ -174,7 +174,7 @@ class Neumiss(nn.Module):
 
 
 class Neumiss_mlp(BaseEstimator):
-    """The Neumiss neural network
+    """The Neumiss + MLP neural network
 
     Parameters
     ----------
