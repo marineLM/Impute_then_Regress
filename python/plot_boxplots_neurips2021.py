@@ -64,6 +64,12 @@ if __name__ == '__main__':
                       'gaussian_sm_stairs']:
 
         scores = pd.read_csv('../results/' + data_type + '.csv', index_col=0)
+        scores_GBRT = pd.read_csv(
+            '../results/' + data_type + '_GBRT.csv', index_col=0)
+        scores = scores.query('method != "GBRT"')
+        scores_GBRT = scores_GBRT.query('method != "BayesPredictor" and ' +
+                                        'method != "BayesPredictor_order0"')
+        scores = pd.concat([scores, scores_GBRT], axis=0, join='outer')
         # scores = scores.query('n == 100000')
         methods = scores.method.unique()
         methods = methods[methods != 'oracleMLPPytorch_mask']
@@ -77,28 +83,42 @@ if __name__ == '__main__':
             value=0)
         scores_no_na['width_factor'] = scores_no_na['width_factor'].fillna(
             value=0)
+        scores_no_na['max_leaf_nodes'] = scores_no_na['max_leaf_nodes'].fillna(
+            value=0)
+        scores_no_na['min_samples_leaf'] = scores_no_na[
+            'min_samples_leaf'].fillna(value=0)
+        scores_no_na['max_iter'] = scores_no_na['max_iter'].fillna(value=0)
         # Averaging over iterations
         mean_score = scores_no_na.groupby(
             ['method', 'n', 'prop_latent', 'depth', 'mlp_depth', 'lr',
-             'weight_decay', 'width_factor'])['R2_val'].mean()
+             'weight_decay', 'width_factor', 'max_leaf_nodes',
+             'min_samples_leaf', 'max_iter'])['R2_val'].mean()
         mean_score = mean_score.reset_index()
         mean_score = mean_score.sort_values(
             by=['method', 'n', 'prop_latent', 'R2_val'])
         best_depth = mean_score.groupby(
             ['method', 'n', 'prop_latent']).last()[
-                ['depth', 'mlp_depth', 'lr', 'weight_decay', 'width_factor']]
+                ['depth', 'mlp_depth', 'lr', 'weight_decay', 'width_factor',
+                 'max_leaf_nodes', 'min_samples_leaf', 'max_iter']]
         best_depth = best_depth.rename(
             columns={'depth': 'best_depth', 'mlp_depth': 'best_mlp_depth',
                      'lr': 'best_lr', 'weight_decay': 'best_weight_decay',
-                     'width_factor': 'best_width_factor'})
+                     'width_factor': 'best_width_factor',
+                     'max_leaf_nodes': 'best_max_leaf_nodes',
+                     'min_samples_leaf': 'best_min_samples_leaf',
+                     'max_iter': 'best_max_iter'})
         scores_no_na = scores_no_na.set_index(
             ['method', 'n', 'prop_latent']).join(best_depth)
         scores_no_depth = scores_no_na.reset_index()
         tmp = ('depth == best_depth and mlp_depth == best_mlp_depth' +
                ' and lr == best_lr and weight_decay == best_weight_decay' +
-               ' and width_factor == best_width_factor')
+               ' and width_factor == best_width_factor' +
+               ' and max_leaf_nodes == best_max_leaf_nodes' +
+               ' and min_samples_leaf == best_min_samples_leaf' +
+               ' and max_iter == best_max_iter')
         scores_no_depth = scores_no_depth.query(tmp)
-
+        # import IPython
+        # IPython.embed()
         # Correct by the Bayes rate
         data_relative = scores_no_depth.copy().set_index('method')
         data_relative['R2_test'] = data_relative.groupby(
@@ -121,14 +141,15 @@ if __name__ == '__main__':
             i = 1
 
         for k, prop_latent in enumerate([0.3, 0.7]):
-            for n in [2e4, 1e5]:
-                data = data_relative.query(
-                    'n == @n and prop_latent == @prop_latent')
-                ax = axes[i, j+k]
-                ax.grid(axis='x')
-                ax.set_axisbelow(True)
-                dim = n == 2e4
-                plot_one(ax, data, NAMES.values(), is_legend=False, dim=dim)
+            # for n in [2e4, 1e5]:
+            n = 1e5
+            data = data_relative.query(
+                'n == @n and prop_latent == @prop_latent')
+            ax = axes[i, j+k]
+            ax.grid(axis='x')
+            ax.set_axisbelow(True)
+            # dim = n == 2e4
+            plot_one(ax, data, NAMES.values(), is_legend=False, dim=False)
 
     for ax in axes[0]:
         xmin, xmax = ax.get_xlim()
@@ -171,8 +192,8 @@ if __name__ == '__main__':
 
     plt.subplots_adjust(left=.24, bottom=.06, right=.998, top=.93,
                         wspace=.1, hspace=.1)
-    plt.show()
-    # plt.savefig('../figures/boxplots_neurips2021.pdf',
-    #             edgecolor='none', facecolor='none', dpi=100)
+    # plt.show()
+    plt.savefig('../figures/boxplots_neurips2021.pdf',
+                edgecolor='none', facecolor='none', dpi=100)
 
-    # plt.close()
+    plt.close()

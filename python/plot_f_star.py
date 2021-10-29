@@ -17,17 +17,23 @@ def f_wave(x):
 
 
 y_wave = [f_wave(x_i) for x_i in xx]
+y_disc = np.array([x_i + (x_i > 1)*3 for x_i in xx])
 
 for y, name in [(y_bowl, 'bowl'),
-                (y_wave, 'wave')]:
+                (y_wave, 'wave'),
+                (y_disc, 'break')]:
     fig, ax = plt.subplots(figsize=(1.7, 1.3))
-    plt.plot(xx, y, label='bowl')
+    if name != 'break':
+        plt.plot(xx, y)
+    else:
+        plt.plot(xx[xx < 1], y[xx < 1], c='C0')
+        plt.plot(xx[xx >= 1], y[xx >= 1], c='C0')
     plt.xlabel(r'$\beta^\top X + \beta_0$')
     plt.xticks([-1, 0, 1, 2, 3])
     plt.ylabel(r'f*($\beta^\top X + \beta_0$)', rotation=90)
     plt.yticks([])
-    #plt.ylim(-2, 3)
-    #plt.legend()
+    # plt.ylim(-2, 3)
+    # plt.legend()
     plt.text(.5, 1, name, va='top', ha='center', transform=ax.transAxes,
              size=14)
     ax.spines['right'].set_visible(False)

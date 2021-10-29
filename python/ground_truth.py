@@ -383,10 +383,6 @@ class BayesPredictor_GSM_nonlinear():
         _, _, sm_params, mu, cov, beta, _, _, link, curvature = \
             self.data_params
 
-        if link == 'discontinuous_linear' and not self.order0:
-            raise ValueError('We do not have the expression of the Bayes' +
-                             'predictor when `link = "discontinuous_linear"`')
-
         k = sm_params['k']
         tsigma2 = sm_params['sigma2_tilde']
         tmu = mu + k*np.sqrt(np.diag(cov))
@@ -418,9 +414,6 @@ class BayesPredictor_GSM_nonlinear():
             if link == 'linear':
                 predx0 = dot_product
                 predx = predx0
-            elif link == 'discontinuous_linear':
-                predx0 = dot_product + (dot_product > 1)*3
-                predx = None
             else:
                 var_Tmis = beta[mis + 1].dot(S).dot(beta[mis + 1])
                 if link == 'square':
@@ -438,6 +431,10 @@ class BayesPredictor_GSM_nonlinear():
                             1/(pi/8*curvature**2) + var_Tmis))
                         predx0 += a*norm.cdf(
                             sqrt(pi/8)*curvature*(dot_product + b))
+                elif link == 'discontinuous_linear':
+                    predx0 = dot_product + (dot_product > 1)*3
+                    predx = dot_product + 3*(1-norm.cdf(
+                        1, loc=dot_product, scale=sqrt(var_Tmis)))
 
             if self.order0:
                 pred.append(predx0)
@@ -460,10 +457,6 @@ class BayesPredictor_MCAR_MAR_nonlinear():
 
     def predict(self, X):
         (_, mu, sigma, beta, _, _, _, _, link, curvature) = self.data_params
-
-        if link == 'discontinuous_linear' and not self.order0:
-            raise ValueError('We do not have the expression of the Bayes' +
-                             'predictor when `link = "discontinuous_linear"`')
 
         pred = []
         for x in X:
@@ -488,9 +481,6 @@ class BayesPredictor_MCAR_MAR_nonlinear():
             if link == 'linear':
                 predx0 = dot_product
                 predx = predx0
-            elif link == 'discontinuous_linear':
-                predx0 = dot_product + (dot_product > 1)*3
-                predx = None
             else:
                 if len(mis)*len(obs) > 0:
                     sigma_mismis = sigma[np.ix_(mis, mis)]
@@ -520,6 +510,10 @@ class BayesPredictor_MCAR_MAR_nonlinear():
                             1/(pi/8*curvature**2) + var_Tmis))
                         predx0 += a*norm.cdf(
                             sqrt(pi/8)*curvature*(dot_product + b))
+                elif link == 'discontinuous_linear':
+                    predx0 = dot_product + (dot_product > 1)*3
+                    predx = dot_product + 3*(1-norm.cdf(
+                        1, loc=dot_product, scale=sqrt(var_Tmis)))
 
             if self.order0:
                 pred.append(predx0)

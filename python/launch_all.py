@@ -11,7 +11,7 @@ parser.add_argument('--link', help='type of link function for the outcome',
 args = parser.parse_args()
 
 n_iter = 10
-n_jobs = 80
+n_jobs = 40
 n_sizes = [2e4, 1e5]
 n_sizes = [int(i) for i in n_sizes]
 n_test = int(1e4)
@@ -69,8 +69,7 @@ data_descs = pd.concat(data_descs, axis=0)
 # Define the methods that will be compared
 methods_params = []
 
-if args.link != 'discontinuous_linear':
-    methods_params.append({'method': 'BayesPredictor', 'order0': False})
+methods_params.append({'method': 'BayesPredictor', 'order0': False})
 methods_params.append({'method': 'BayesPredictor_order0', 'order0': True})
 
 for max_leaf_nodes in [50, 100, 200, 400, 600]:

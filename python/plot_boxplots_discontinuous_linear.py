@@ -14,12 +14,6 @@ def plot_one(ax, data, methods=None, is_legend=False, dim=False):
     if methods is None:
         methods = data['method'].unique()
 
-    # Plot test
-    # sns.boxplot(
-    #    data=data.query('train_test == "test"'), x='r2', order=methods,
-    #            saturation=1, y='method', ax=ax, boxprops=dict(alpha=alpha),
-    #            whiskerprops=dict(alpha=alpha),
-    #            flierprops=dict(alpha=alpha))
     sns.violinplot(
         data=data, x='R2_test', order=methods, saturation=1, y='method', ax=ax,
         scale="width",  color=('.8' if dim else None))
@@ -28,15 +22,11 @@ def plot_one(ax, data, methods=None, is_legend=False, dim=False):
         if i % 2:
             ax.axhspan(i - .5, i + .5, color='.9', zorder=0)
 
-    # Plot train
-    # sns.lineplot(
-    #    data=data.query('train_test == "train"'), x='params_by_samples',
-    #    y='r2', hue='experiment', ax=ax, ci=None,
-    #    legend=False, style="train_test", dashes=6 * [(1, 2)])
-
     # Set axes
     ax.set_xlabel(None)
     ax.set_ylabel(None)
+    # ax.set_xticks(np.linspace(-0.3, 0, 4))
+    ax.locator_params(axis='x', nbins=4)
     ax.axvline(0, color='.1', linewidth=1)
     ax.spines['right'].set_edgecolor('.6')
     ax.spines['left'].set_edgecolor('.6')
@@ -72,12 +62,18 @@ if __name__ == '__main__':
                       'gaussian_sm_discontinuous_linear']:
 
         scores = pd.read_csv('../results/' + data_type + '.csv', index_col=0)
-        # scores_GBRT = pd.read_csv(
-        #     '../results/' + data_type + '_GBRT.csv', index_col=0)
-        # scores = scores.query('method != "GBRT"')
-        # scores_GBRT = scores_GBRT.query('method != "BayesPredictor" and ' +
-        #                                 'method != "BayesPredictor_order0"')
-        # scores = pd.concat([scores, scores_GBRT], axis=0, join='outer')
+        scores_GBRT = pd.read_csv(
+            '../results/' + data_type + '_GBRT.csv', index_col=0)
+        scores_BP = pd.read_csv(
+            '../results/' + data_type + '_BP.csv', index_col=0)
+        scores = scores.query('method != "GBRT" and ' +
+                              'method != "BayesPredictor" and ' +
+                              'method != "BayesPredictor_order0"')
+        scores_GBRT = scores_GBRT.query('method != "BayesPredictor" and ' +
+                                        'method != "BayesPredictor_order0"')
+        scores = pd.concat(
+            [scores, scores_GBRT, scores_BP], axis=0, join='outer')
+
         # scores = scores.query('n == 100000')
         methods = scores.method.unique()
         methods = methods[methods != 'oracleMLPPytorch_mask']
@@ -91,33 +87,46 @@ if __name__ == '__main__':
             value=0)
         scores_no_na['width_factor'] = scores_no_na['width_factor'].fillna(
             value=0)
+        scores_no_na['max_leaf_nodes'] = scores_no_na['max_leaf_nodes'].fillna(
+            value=0)
+        scores_no_na['min_samples_leaf'] = scores_no_na[
+            'min_samples_leaf'].fillna(value=0)
+        scores_no_na['max_iter'] = scores_no_na['max_iter'].fillna(value=0)
         # Averaging over iterations
         mean_score = scores_no_na.groupby(
             ['method', 'n', 'prop_latent', 'depth', 'mlp_depth', 'lr',
-             'weight_decay', 'width_factor'])['R2_val'].mean()
+             'weight_decay', 'width_factor', 'max_leaf_nodes',
+             'min_samples_leaf', 'max_iter'])['R2_val'].mean()
         mean_score = mean_score.reset_index()
         mean_score = mean_score.sort_values(
             by=['method', 'n', 'prop_latent', 'R2_val'])
         best_depth = mean_score.groupby(
             ['method', 'n', 'prop_latent']).last()[
-                ['depth', 'mlp_depth', 'lr', 'weight_decay', 'width_factor']]
+                ['depth', 'mlp_depth', 'lr', 'weight_decay', 'width_factor',
+                 'max_leaf_nodes', 'min_samples_leaf', 'max_iter']]
         best_depth = best_depth.rename(
             columns={'depth': 'best_depth', 'mlp_depth': 'best_mlp_depth',
                      'lr': 'best_lr', 'weight_decay': 'best_weight_decay',
-                     'width_factor': 'best_width_factor'})
+                     'width_factor': 'best_width_factor',
+                     'max_leaf_nodes': 'best_max_leaf_nodes',
+                     'min_samples_leaf': 'best_min_samples_leaf',
+                     'max_iter': 'best_max_iter'})
         scores_no_na = scores_no_na.set_index(
             ['method', 'n', 'prop_latent']).join(best_depth)
         scores_no_depth = scores_no_na.reset_index()
         tmp = ('depth == best_depth and mlp_depth == best_mlp_depth' +
                ' and lr == best_lr and weight_decay == best_weight_decay' +
-               ' and width_factor == best_width_factor')
+               ' and width_factor == best_width_factor' +
+               ' and max_leaf_nodes == best_max_leaf_nodes' +
+               ' and min_samples_leaf == best_min_samples_leaf' +
+               ' and max_iter == best_max_iter')
         scores_no_depth = scores_no_depth.query(tmp)
 
         # Correct by the mean performance across methods
-        data_relative = scores_no_depth.copy()
+        data_relative = scores_no_depth.copy().set_index('method')
         data_relative['R2_test'] = data_relative.groupby(
             ['iter', 'n', 'prop_latent'])['R2_test'].transform(
-                lambda df: df - df.mean())
+                lambda df: df - df["BayesPredictor"])
         data_relative = data_relative.reset_index()
         data_relative = data_relative.query('method != "BayesPredictor"')
         data_relative['method'] = data_relative['method'].map(NAMES)
@@ -129,16 +138,16 @@ if __name__ == '__main__':
             i = 1
 
         for k, prop_latent in enumerate([0.3, 0.7]):
-            for n in [2e4, 1e5]:
-                data = data_relative.query(
-                    'n == @n and prop_latent == @prop_latent')
+            n = 1e5
+            data = data_relative.query(
+                'n == @n and prop_latent == @prop_latent')
             ax = axes[i, j+k]
             ax.grid(axis='x')
             ax.set_axisbelow(True)
-            dim = n == 2e4
-            plot_one(ax, data, NAMES.values(), is_legend=False, dim=dim)
+            # dim = n == 2e4
+            plot_one(ax, data, NAMES.values(), is_legend=False, dim=False)
 
-    plt.text(0.32, 0, 'Change in R2 compared to average across methods',
+    plt.text(0.4, 0, 'Drop in R2 compared to Bayes predictor',
              transform=fig.transFigure, va='bottom', size=13)
 
     rect = patches.Rectangle((0, .413), width=.12, height=.085, facecolor='k',
@@ -155,17 +164,17 @@ if __name__ == '__main__':
              transform=fig.transFigure, ha='left', size=14,
              color='1', bbox=dict(facecolor='k'))
 
-    plt.text(0.66, 0.995, 'Discontinuous Linear',
+    plt.text(0.68, 0.995, 'Break',
              transform=fig.transFigure, ha='center', va='top', size=13)
 
-    line1 = lines.Line2D((.33, .985), (.969, .969), color='k',
+    line1 = lines.Line2D((.36, .995), (.969, .969), color='k',
                          transform=fig.transFigure)
     fig.add_artist(line1)
 
     axes[0, 0].set_title('high correlation: easy', size=12, pad=2)
     axes[0, 1].set_title('low correlation: hard', size=12, pad=2)
 
-    plt.subplots_adjust(left=.33, bottom=.06, right=.996, top=.93,
+    plt.subplots_adjust(left=.36, bottom=.06, right=.995, top=.93,
                         wspace=.1, hspace=.1)
     # plt.show()
     plt.savefig('../figures/boxplots_discontinuous_linear.pdf',
