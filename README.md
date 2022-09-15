@@ -1,6 +1,8 @@
 This repository contains the code to reproduce the experiments of the paper:
 
-__What's a good imputation to predict with missing values?.__
+[What's a good imputation to predict with missing values?](https://papers.nips.cc/paper/2021/file/5fe8fdc79ce292c39c5f209d734b7206-Paper.pdf)
+
+**If you want to try NeuMiss, we advise you to look at the [NeuMiss_sota repository](https://github.com/marineLM/NeuMiss_sota), which provides an easy-to-use PyTorch module implementing NeuMiss.**
 
 The file **Impute_then_Regress.yml** indicates the packages required as well as
 the versions used in our experiments.
